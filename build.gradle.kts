@@ -1,5 +1,5 @@
 plugins {
-    id("fabric-loom") version "1.+"
+    id("fabric-loom") version "1.0.+"
     id("maven-publish")
     id("project-report")
 }
@@ -34,7 +34,7 @@ repositories {
     maven("https://maven.the-glitch.network") { name = "The Glitch" }
     maven("https://maven.nucleoid.xyz") { name = "NucleoidMC" }
     maven("https://maven.shedaniel.me/")
-    maven("https://maven-nucleoid.pb4.eu/") { name = "NucleoidMC Fallback" }
+//    maven("https://maven-nucleoid.pb4.eu/") { name = "NucleoidMC Fallback" }
     maven("https://jitpack.io/") {
         name = "JitPack"
         mavenContent {
@@ -56,7 +56,7 @@ dependencies {
         exclude(module = "fabric-gametest-api-v1")
     }
     modImplementation("dev.gegy:markdown-chat:1.3.0", excludeFabricApi)
-    modImplementation("com.github.samolego.Config2Brigadier:config2brigadier-fabric:1.2.1", excludeFabricApi)
+    // modImplementation("com.github.samolego.Config2Brigadier:config2brigadier-fabric:1.2.1", excludeFabricApi)
     modImplementation("maven.modrinth:fabrictailor:2.0.2")
     // modRuntimeOnly("maven.modrinth:drogtor:1.1.3+1.19")
     include(modImplementation("fr.catcore:server-translations-api:1.4.19+1.19.3", excludeFabricApi))
@@ -66,6 +66,10 @@ dependencies {
     include(implementation("net.dv8tion:JDA:5.0.0-beta.2") {
         exclude(module = "opus-java")
     })
+
+    modApi("maven.modrinth:vanish:1.3.2") {
+        isTransitive = false
+    }
 
     include(modApi("me.sargunvohra.mcmods:autoconfig1u:3.3.1", excludeFabricApi))
     include(modApi("me.shedaniel.cloth:cloth-config-fabric:7.0.72", excludeFabricApi))

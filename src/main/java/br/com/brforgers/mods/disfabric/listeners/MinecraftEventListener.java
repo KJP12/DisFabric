@@ -5,6 +5,7 @@ import br.com.brforgers.mods.disfabric.events.PlayerAdvancementCallback;
 import br.com.brforgers.mods.disfabric.events.PlayerDeathCallback;
 import br.com.brforgers.mods.disfabric.events.ServerChatCallback;
 import br.com.brforgers.mods.disfabric.markdown.SpecialStringType;
+import br.com.brforgers.mods.disfabric.utils.VanishService;
 import br.com.brforgers.mods.disfabric.utils.Utils;
 import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
@@ -12,6 +13,7 @@ import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.message.v1.ServerMessageDecoratorEvent;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -69,16 +71,26 @@ public final class MinecraftEventListener {
             });
 
             ServerPlayConnectionEvents.JOIN.register((handler, $2, $3) -> {
-                if (DisFabric.config.announcePlayers && !DisFabric.stop) {
+                if (DisFabric.config.announcePlayers && !DisFabric.stop && !VanishService.isPlayerVanished(handler.player)) {
                     DisFabric.bridgeChannel.sendMessage(DisFabric.config.texts.joinServer.replace("%playername%", MarkdownSanitizer.escape(Utils.playerName(handler.player)))).queue();
                 }
             });
 
             ServerPlayConnectionEvents.DISCONNECT.register((handler, $2) -> {
-                if (DisFabric.config.announcePlayers && !DisFabric.stop) {
+                if (DisFabric.config.announcePlayers && !DisFabric.stop && !VanishService.isPlayerVanished(handler.player)) {
                     DisFabric.bridgeChannel.sendMessage(DisFabric.config.texts.leftServer.replace("%playername%", MarkdownSanitizer.escape(Utils.playerName(handler.player)))).queue();
                 }
             });
+            VanishService.listen();
+        }
+    }
+
+    /**
+     * @author Octal
+     * */
+    public static void onPlayerVanishChange(ServerPlayerEntity player, boolean vanish) {
+        if (DisFabric.config.announcePlayers && !DisFabric.stop) {
+            DisFabric.bridgeChannel.sendMessage((vanish ? DisFabric.config.texts.leftServer : DisFabric.config.texts.joinServer).replace("%playername%", MarkdownSanitizer.escape(Utils.playerName(player)))).queue();
         }
     }
 }
