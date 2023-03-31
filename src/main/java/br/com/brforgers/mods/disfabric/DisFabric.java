@@ -6,7 +6,6 @@ import br.com.brforgers.mods.disfabric.commands.SuggestCommand;
 import br.com.brforgers.mods.disfabric.listeners.DiscordEventListener;
 import br.com.brforgers.mods.disfabric.listeners.MinecraftEventListener;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import kong.unirest.Unirest;
 import me.sargunvohra.mcmods.autoconfig1u.AutoConfig;
 import me.sargunvohra.mcmods.autoconfig1u.serializer.JanksonConfigSerializer;
 import net.dv8tion.jda.api.JDA;
@@ -99,10 +98,9 @@ public class DisFabric implements DedicatedServerModInitializer {
             ServerLifecycleEvents.SERVER_STOPPING.register((server) -> {
                 stop = true;
                 if (!config.commandsOnly) {
-                    bridgeChannel.sendMessage(DisFabric.config.texts.serverStopped).complete();
+                    bridgeChannel.sendMessage(DisFabric.config.texts.serverStopped).queue();
                 }
-                Unirest.shutDown();
-                DisFabric.jda.shutdownNow();
+                DisFabric.jda.shutdown();
             });
             MinecraftEventListener.init();
 

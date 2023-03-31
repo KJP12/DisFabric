@@ -5,10 +5,12 @@ import br.com.brforgers.mods.disfabric.events.PlayerAdvancementCallback;
 import br.com.brforgers.mods.disfabric.events.PlayerDeathCallback;
 import br.com.brforgers.mods.disfabric.events.ServerChatCallback;
 import br.com.brforgers.mods.disfabric.markdown.SpecialStringType;
+import br.com.brforgers.mods.disfabric.utils.HttpServices;
+import br.com.brforgers.mods.disfabric.utils.MicroSerialRatelimiter;
 import br.com.brforgers.mods.disfabric.utils.Utils;
 import br.com.brforgers.mods.disfabric.utils.VanishService;
-import kong.unirest.Unirest;
-import kong.unirest.json.JSONObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.message.v1.ServerMessageDecoratorEvent;
@@ -18,11 +20,16 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import okhttp3.RequestBody;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public final class MinecraftEventListener {
     private static final Identifier DISFABRIC_CHAT = Identifier.of("disfabric", "decorator");
+
+    public static final MicroSerialRatelimiter DISCORD_WEBHOOK
+            = HttpServices.createRatelimitedClient("{}", HttpServices.SET_UA, TimeUnit.SECONDS);
 
     private static final String
             playerName = "%playername%",
@@ -40,17 +47,21 @@ public final class MinecraftEventListener {
 
                 String convertedString = Utils.convertMentionsFromNames(rawMessage);
                 if (DisFabric.config.isWebhookEnabled) {
-                    JSONObject body = new JSONObject();
+                    final var body = new JsonObject();
                     // TODO: Verify if this is applicable to all nickname mods
                     //  If not, add some detection logic for getName and getDisplayName against getEntityName.
-                    body.put("username", Utils.playerName(playerEntity));
-                    body.put("avatar_url", Utils.playerAvatarUrl(playerEntity));
-                    JSONObject allowed_mentions = new JSONObject();
-                    allowed_mentions.put("parse", new String[]{"users"});
-                    body.put("allowed_mentions", allowed_mentions);
-                    body.put("content", convertedString);
+                    body.addProperty("username", Utils.playerName(playerEntity));
+                    body.addProperty("avatar_url", Utils.playerAvatarUrl(playerEntity));
+                    final var allowed_mentions = new JsonObject();
+                    final var parse = new JsonArray();
+                    parse.add("users");
+                    allowed_mentions.add("parse", parse);
+                    body.add("allowed_mentions", allowed_mentions);
+                    body.addProperty("content", convertedString);
                     try {
-                        Unirest.post(DisFabric.config.webhookURL).header("Content-Type", "application/json").body(body).asJsonAsync();
+                        DISCORD_WEBHOOK.submit(request -> {
+                            request.post(RequestBody.create(body.toString(), HttpServices.jsonMediaType));
+                        }, DisFabric.config.webhookURL);
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }

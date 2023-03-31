@@ -84,11 +84,6 @@ dependencies {
     modRuntimeOnly("me.lucko:fabric-permissions-api:0.2-SNAPSHOT")
 
     include(modApi("me.sargunvohra.mcmods:autoconfig1u:3.3.1", excludeFabricApi))
-    include(implementation("com.konghq:unirest-java:3.13.10:standalone") {
-        exclude(group = "com.google.code.gson", module = "gson")
-        exclude(group = "org.apache.httpcomponents", module = "httpclient")
-        exclude(group = "commons-logging", module = "commons-logging")
-    })
 
     include(implementation("com.fasterxml.jackson.core", "jackson-databind", "2.13.3"))
     include(implementation("net.sf.trove4j", "trove4j", "3.0.3"))
