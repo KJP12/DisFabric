@@ -1,5 +1,6 @@
 plugins {
     id("fabric-loom") version "1.0.+"
+    id("io.github.p03w.machete") version "2.0.0"
     id("maven-publish")
     id("project-report")
 }
