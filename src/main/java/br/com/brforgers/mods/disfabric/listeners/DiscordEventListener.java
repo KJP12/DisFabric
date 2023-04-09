@@ -8,14 +8,12 @@ import com.mojang.authlib.Agent;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.ProfileLookupCallback;
 import dev.gegy.mdchat.TextStyler;
+import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.entities.Activity;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WhitelistEntry;
@@ -31,7 +29,6 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,18 +36,19 @@ public class DiscordEventListener extends ListenerAdapter {
     private static final Style LINK = Style.EMPTY.withFormatting(Formatting.AQUA, Formatting.UNDERLINE);
 
     private boolean checkAdminPermissions(Member authorMember, long authorId) {
-        Guild guild = authorMember.getGuild();
+        if (DisFabric.config.admins.contains(authorId)) {
+            return true;
+        }
 
-        boolean hasAdminRole = false;
-        for (long roleId : DisFabric.config.roles) {
-            Role role = guild.getRoleById(roleId);
-            if (role != null && authorMember.getRoles().contains(role)) {
-                hasAdminRole = true;
-                break;
+        final var configRoles = DisFabric.config.roles;
+
+        if (!configRoles.isEmpty() && authorMember != null) {
+            for (var role : authorMember.getRoles()) {
+                if (configRoles.contains(role.getIdLong())) return true;
             }
         }
 
-        return hasAdminRole || DisFabric.config.admins.contains(authorId);
+        return false;
     }
 
     public void onMessageReceived(@NotNull MessageReceivedEvent e) {
