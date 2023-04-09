@@ -45,7 +45,7 @@ public class Configuration implements ConfigData {
 
     @Comment(value = """
             Admins IDs in Discord, either role or user; see https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-
-                        
+
             If you're adding more than one admin, separate using commas, like this:
             "adminsIds": [\s
             \t\t000,
@@ -54,6 +54,13 @@ public class Configuration implements ConfigData {
             \t]""")
     @ConfigEntry.Category(value = "Discord")
     public Set<Long> admins = new HashSet<>();
+
+    @ConfigEntry.Category(value = "Discord")
+    public Set<Long> roles = new HashSet<>();
+
+    @Comment(value = "Allow another bot to run a command as long as it has an allowed role.")
+    @ConfigEntry.Category(value = "Discord")
+    public boolean allowBots = false;
 
     @Deprecated
     boolean migrateAdmins() {

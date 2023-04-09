@@ -8,6 +8,8 @@ import com.mojang.authlib.Agent;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.ProfileLookupCallback;
 import dev.gegy.mdchat.TextStyler;
+import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -33,22 +35,66 @@ import java.util.Objects;
 public class DiscordEventListener extends ListenerAdapter {
     private static final Style LINK = Style.EMPTY.withFormatting(Formatting.AQUA, Formatting.UNDERLINE);
 
+    private boolean checkAdminPermissions(Member authorMember, long authorId) {
+        if (DisFabric.config.admins.contains(authorId)) {
+            return true;
+        }
+
+        final var configRoles = DisFabric.config.roles;
+
+        if (!configRoles.isEmpty() && authorMember != null) {
+            for (var role : authorMember.getRoles()) {
+                if (configRoles.contains(role.getIdLong())) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether the author can execute commands.
+     */
+    private static boolean checkAuthor(User author) {
+        final var self = DisFabric.jda.getSelfUser();
+        // Make sure the bot *can't* execute its own messages.
+        if (author.equals(self) || author.getIdLong() == DisFabric.selfWebhook) return false;
+        if (!author.isBot()) return true;
+
+        return DisFabric.config.allowBots;
+    }
+
     public void onMessageReceived(@NotNull MessageReceivedEvent e) {
         MinecraftServer server = getServer();
         MessageChannel channel = e.getChannel();
-        if (server != null && !e.getAuthor().isBot() && channel.getIdLong() == DisFabric.config.bridgeChannel) {
+        if (server != null) {
+            int playerNumber = server.getCurrentPlayerCount();
+            int maxPlayer = server.getMaxPlayerCount();
+            DisFabric.jda.getPresence().setActivity(Activity.playing(playerNumber + " / " + maxPlayer));
+        }
+        if (server != null && channel.getIdLong() == DisFabric.config.bridgeChannel && checkAuthor(e.getAuthor())) {
             String raw = e.getMessage().getContentRaw();
             if (raw.startsWith("!")) {
                 int space = raw.indexOf(' ', 1);
                 switch (space == -1 ? raw.substring(1) : raw.substring(1, space)) {
                     case "console" -> {
-                        if (!DisFabric.config.admins.contains(e.getAuthor().getIdLong())) return;
+                        long authorId = e.getAuthor().getIdLong();
+                        Member authorMember = e.getMember();
+
+                        if (!checkAdminPermissions(authorMember, authorId)) {
+                            return; // Author doesn't have an admin role or admin user ID, so return and don't execute the function
+                        }
+
                         String command = raw.substring(space + 1);
                         server.execute(() -> server.getCommandManager().executeWithPrefix(getDiscordCommandSource(e), command));
                     }
+
                     case "whitelist" -> {
-                        if (!DisFabric.config.publicWhitelist &&
-                                !DisFabric.config.admins.contains(e.getAuthor().getIdLong())) return;
+                        long authorId = e.getAuthor().getIdLong();
+                        Member authorMember = e.getMember();
+
+                        if (!DisFabric.config.publicWhitelist && !checkAdminPermissions(authorMember, authorId)) {
+                            return; // Author doesn't have an admin role or admin user ID, so return and don't execute the function
+                        }
 
                         String username = raw.substring(space + 1).strip();
 
@@ -119,10 +165,10 @@ public class DiscordEventListener extends ListenerAdapter {
                     case "help" -> channel.sendMessage("""
                             ```ansi
                             =============== \u001B[32;1mCommands\u001B[0m ===============
-                                                    
+
                             To whitelist yourself on this server use:
                             !\u001B[33mwhitelist\u001B[0m <\u001B[30mminecraft username\u001B[0m>
-                                                    
+
                             !\u001B[33monline\u001B[0m: list server online players
                             !\u001B[33mtps\u001B[0m: shows loaded dimensions tps's
                             !\u001B[33mspawn\u001B[0m: shows the location of spawn
