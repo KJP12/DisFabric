@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Webhook;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
@@ -43,6 +44,7 @@ public class DisFabric implements DedicatedServerModInitializer {
     public static final Logger logger = LogManager.getLogger(MOD_ID);
     public static Configuration config;
     public static JDA jda;
+    public static long selfWebhook;
     public static Guild guild;
     public static GuildMessageChannel bridgeChannel;
     @Nullable
@@ -65,9 +67,15 @@ public class DisFabric implements DedicatedServerModInitializer {
             }
         }
 
-        if (config.isWebhookEnabled && (config.webhookURL == null || config.webhookURL.isBlank())) {
-            logger.error("Webhook is not set. Falling back to a regular message. Please set a webhook URL in ~/config/disfabric.json5");
-            config.isWebhookEnabled = false;
+        if (config.isWebhookEnabled) {
+            if (config.webhookURL == null || config.webhookURL.isBlank()) {
+                logger.error("Webhook is not set. Falling back to a regular message. Please set a webhook URL in ~/config/disfabric.json5");
+
+                config.isWebhookEnabled = false;
+            } else {
+                final var url = Webhook.WEBHOOK_URL.matcher(config.webhookURL);
+                selfWebhook = Long.parseUnsignedLong(url.group("id"));
+            }
         }
         try {
             if (config.botToken == null || config.botToken.isBlank()) {

@@ -51,6 +51,18 @@ public class DiscordEventListener extends ListenerAdapter {
         return false;
     }
 
+    /**
+     * Checks whether the author can execute commands.
+     */
+    private static boolean checkAuthor(User author) {
+        final var self = DisFabric.jda.getSelfUser();
+        // Make sure the bot *can't* execute its own messages.
+        if (author.equals(self) || author.getIdLong() == DisFabric.selfWebhook) return false;
+        if (!author.isBot()) return true;
+
+        return DisFabric.config.allowBots;
+    }
+
     public void onMessageReceived(@NotNull MessageReceivedEvent e) {
         MinecraftServer server = getServer();
         MessageChannel channel = e.getChannel();
@@ -59,7 +71,7 @@ public class DiscordEventListener extends ListenerAdapter {
             int maxPlayer = server.getMaxPlayerCount();
             DisFabric.jda.getPresence().setActivity(Activity.playing(playerNumber + " / " + maxPlayer));
         }
-        if (server != null && (DisFabric.config.allowBots || !e.getAuthor().isBot()) && channel.getIdLong() == DisFabric.config.bridgeChannel) {
+        if (server != null && channel.getIdLong() == DisFabric.config.bridgeChannel && checkAuthor(e.getAuthor())) {
             String raw = e.getMessage().getContentRaw();
             if (raw.startsWith("!")) {
                 int space = raw.indexOf(' ', 1);
