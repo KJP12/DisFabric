@@ -54,11 +54,10 @@ public class DiscordEventListener extends ListenerAdapter {
     public void onMessageReceived(@NotNull MessageReceivedEvent e) {
         MinecraftServer server = getServer();
         MessageChannel channel = e.getChannel();
-        if(server !=null) {
-            List<ServerPlayerEntity> onlinePlayers = server.getPlayerManager().getPlayerList();
-            int playerNumber = onlinePlayers.size();
+        if (server != null) {
+            int playerNumber = server.getCurrentPlayerCount();
             int maxPlayer = server.getMaxPlayerCount();
-            DisFabric.jda.getPresence().setActivity(Activity.playing(String.valueOf(playerNumber + " / " + maxPlayer)));
+            DisFabric.jda.getPresence().setActivity(Activity.playing(playerNumber + " / " + maxPlayer));
         }
         if (server != null && (DisFabric.config.allowBots || !e.getAuthor().isBot()) && channel.getIdLong() == DisFabric.config.bridgeChannel) {
             String raw = e.getMessage().getContentRaw();
